@@ -19,10 +19,25 @@ const Header = (header, val) => req => req.headers.get(header) === val
 const Host = host => Header('host', host.toLowerCase())
 const Referrer = host => Header('referrer', host.toLowerCase())
 
+const parsePathParams = (path, regExp, match) => {
+    if (!(match[0] === path)) return;
+
+    const subs = path.split('/');
+    const patterns = regExp.split('/');
+    const pathParams = patterns.reduce((params, pattern, i) => {
+        if (!pattern.includes(':') || !subs[i]) return params;
+        params[pattern.slice(1)] = subs[i]
+        return params;
+    }, {})
+
+    return pathParams
+}
+
 const Path = regExp => req => {
     const url = new URL(req.url)
     const path = url.pathname
-    const match = path.match(regExp) || []
+    const match = path.match(regExp.replace(/:\w+/g, '.+')) || [];
+    req.pathParams = parsePathParams(path, regExp, match);
     return match[0] === path
 }
 
